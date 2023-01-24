@@ -37,7 +37,7 @@ class StockTradingEnv():
         self.stock_owned = 0
         return self.observation_space.iloc[self.current_step]
 
-stock_data = yf.download('AAPL', '2023-01-19', '2023-01-20', interval='5m')
+stock_data = yf.download('AAPL', '2023-01-19', '2023-01-20', interval='1m')
 stock_data = stock_data.reset_index()
 stock_data = stock_data.dropna()
 
@@ -45,12 +45,7 @@ print(stock_data.head())
 
 env = StockTradingEnv(stock_data)
 
-inputs = tf.keras.Input(shape=(5,))
-x = tf.keras.layers.Dense(64, activation='relu')(inputs)
-x = tf.keras.layers.Dense(64, activation='relu')(x)
-outputs = tf.keras.layers.Dense(3, activation='softmax')(x)
-
-model = tf.keras.Model(inputs=inputs, outputs=outputs)
+model = tf.keras.models.load_model('stock_trading_model')
 
 loss_fn = tf.keras.losses.CategoricalCrossentropy()
 optimizer = tf.keras.optimizers.Adam()
@@ -59,7 +54,7 @@ model.compile(optimizer=optimizer, loss=loss_fn)
 
 memory = deque(maxlen=1000)
 epsilon = 0.1
-num_episodes = 20
+num_episodes = 150000
 batch_size = 32
 discount_factor = 0.99
 
@@ -104,6 +99,9 @@ for episode in range(num_episodes):
 
     model.fit(obs_batch, target, epochs=1, verbose=0)
     if episode % 10 == 0:
+        epsilon = epsilon * 0.99
         model.save('stock_trading_model')
+    if episode % 250 == 0:
+        model.save('stock_trading_model_{}'.format(episode))
 
     print('Episode: {}, Reward: {}, Portfolio Value: {}'.format(episode, reward, env.available_currency + env.stock_owned * stock_data.iloc[env.current_step]['Open']))
