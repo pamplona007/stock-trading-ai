@@ -29,7 +29,7 @@ class StockTradingEnv():
             pass
         done = self.current_step == len(self.stock_data)-1
         reward = reward_function(self.available_currency, self.stock_owned, self.stock_data, self.current_step)
-        return self.observation_space.iloc[self.current_step], reward, done, {}
+        return self.observation_space.iloc[self.current_step], reward, done
 
     def reset(self):
         self.current_step = 0
@@ -73,7 +73,7 @@ for episode in range(num_episodes):
             action = np.random.choice(env.action_space)
         else:
             action = np.argmax(action_probs)
-        next_obs, reward, done, _ = env.step(action)
+        next_obs, reward, done = env.step(action)
         memory.append((obs, action, reward, next_obs, done))
         obs = next_obs
 
@@ -104,6 +104,6 @@ for episode in range(num_episodes):
 
     model.fit(obs_batch, target, epochs=1, verbose=0)
     if episode % 10 == 0:
-        model.save('model_ep' + str(episode) + '.h5')
+        model.save('stock_trading_model')
 
     print('Episode: {}, Reward: {}, Portfolio Value: {}'.format(episode, reward, env.available_currency + env.stock_owned * stock_data.iloc[env.current_step]['Open']))
